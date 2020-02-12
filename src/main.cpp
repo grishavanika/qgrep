@@ -245,6 +245,22 @@ void parseSearchOptions(const char* opts, unsigned int& options, unsigned int& l
 		case ' ':
 			break;
 			
+        case 's':
+            options |= SO_SHORT_FILENAMES;
+            break;
+
+        case 'u':
+            options |= SO_UNIQUE_BY_FILE;
+            break;
+
+        case 'x':
+            options |= SO_SKIP_HARDCODED_LINES_START;
+            break;
+			
+        case 'z':
+            options |= SO_SKIP_SINGLE_COMMENT;
+            break;
+
 		default:
 			throw std::runtime_error(std::string("Unknown search option '") + *s + "'");
 		}
@@ -364,8 +380,11 @@ void printHelp(Output* output, bool extended)
 "<query> is a regular expression\n"
 "\n"
 "<search-options> can include:\n"
-"  i - case-insensitive search          l - literal (substring) search\n"
-"  V - Visual Studio formatting         S - print search summary\n");
+"  i - case-insensitive search                         l - literal (substring) search\n"
+"  V - Visual Studio formatting                        S - print search summary\n"
+"  s - short file names                                u - print only first match in file & skip rest of the file\n"
+"  x - ignore matches with `#include` or `#pragma`     z - ignore matches with `//`\n"
+);
 
     if (extended)
         output->print(

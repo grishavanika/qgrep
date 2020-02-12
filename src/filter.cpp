@@ -40,6 +40,19 @@ static void processMatch(const char* path, size_t pathLength, FilterOutput* outp
 		path = buffer;
 	}
 
+    if ((output->options & SO_SHORT_FILENAMES) && (pathLength > 0))
+    {
+        for (int i = int(pathLength) - 1; i >= 0; --i)
+        {
+            if ((path[i] == '/') || (path[i] == '\\'))
+            {
+                pathLength -= (i + 1);
+                path += (i + 1);
+                break;
+            }
+        }
+    }
+
 	output->output->rawprint(path, pathLength);
 	output->output->rawprint("\n", 1);
 }

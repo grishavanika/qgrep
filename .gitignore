@@ -1,7 +1,9 @@
 # build artifacts
 /build/
 /qgrep
+/extern
 
 # visual studio temporary files
 /.vs/
 *.suo
+*.vcxproj.user

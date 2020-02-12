@@ -115,12 +115,28 @@ static void processMatch(Regex* re, SearchOutput* output, OrderedOutput::Chunk* 
 		path = buffer;
 	}
 
+    if ((output->options & SO_SHORT_FILENAMES) && (pathLength > 0))
+    {
+        for (int i = int(pathLength) - 1; i >= 0; --i)
+        {
+            if ((path[i] == '/') || (path[i] == '\\'))
+            {
+                pathLength -= (i + 1);
+                path += (i + 1);
+                break;
+            }
+        }
+    }
+
 	char linecolumn[256];
 	size_t linecolumnsize = printMatchLineColumn(lineNumber, matchOffset + 1, output->options, linecolumn);
 
 	if (output->options & SO_HIGHLIGHT) outputChunk->result += kHighlightPath;
+
 	outputChunk->result.append(path, pathLength);
 	outputChunk->result.append(linecolumn, linecolumnsize);
+
+
 	if (output->options & SO_HIGHLIGHT) outputChunk->result += kHighlightEnd;
 
 	if (output->options & SO_HIGHLIGHT_MATCHES)
@@ -131,6 +147,40 @@ static void processMatch(Regex* re, SearchOutput* output, OrderedOutput::Chunk* 
 	outputChunk->result += '\n';
 
 	output->output.write(outputChunk);
+}
+
+static bool starts_with_bad_string(const char* lbeg, const char* lend, bool check_comments)
+{
+    static const struct
+    {
+        const char* const str;
+        unsigned size;
+    } c_strs[] =
+    {
+        {"#include", 8},
+        {"#pragma", 7},
+    };
+    for (; lbeg < lend; ++lbeg)
+    {
+        if (!isspace(*lbeg)) break;
+    }
+
+    for (const auto& info : c_strs)
+    {
+        if (strncmp(lbeg, info.str, (std::min<unsigned>)(info.size, (lend - lbeg))) == 0)
+        {
+            return true;
+        }
+    }
+
+    if (check_comments)
+    {
+        if (strncmp(lbeg, "//", (std::min<unsigned>)(2, (lend - lbeg))) == 0)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 static void processFileData(Regex* re, SearchOutput* output, OrderedOutput::Chunk* outputChunk, HighlightBuffer& hlbuf,
@@ -154,14 +204,20 @@ static void processFileData(Regex* re, SearchOutput* output, OrderedOutput::Chun
 		// print match
 		const char* lbeg = findLineStart(begin, match.data);
 		const char* lend = findLineEnd(match.data + match.size, end);
-		processMatch(re, output, outputChunk, hlbuf, path, pathLength, (lbeg - range) + data, lend - lbeg, line, lbeg, match.data - lbeg, match.size);
-		
-		// early-out for big matches
-		if (output->isLimitReached(outputChunk)) break;
+
+        if (!(output->options & SO_SKIP_HARDCODED_LINES_START)
+            || !starts_with_bad_string(lbeg, lend, output->options & SO_SKIP_SINGLE_COMMENT))
+        {
+            processMatch(re, output, outputChunk, hlbuf, path, pathLength, (lbeg - range) + data, lend - lbeg, line, lbeg, match.data - lbeg, match.size);
+            if (output->options & SO_UNIQUE_BY_FILE) break;
+            // early-out for big matches
+            if (output->isLimitReached(outputChunk)) break;
+        }
 
 		// move to next line
 		if (lend == end) break;
 		begin = lend + 1;
+
 	}
 
 	re->rangeFinalize(range);

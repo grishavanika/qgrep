@@ -19,7 +19,12 @@ enum SearchOptions
 	SO_HIGHLIGHT = 1 << 9,
 	SO_HIGHLIGHT_MATCHES = 1 << 10,
 
-	SO_SUMMARY = 1 << 11
+	SO_SUMMARY = 1 << 11,
+
+    SO_SHORT_FILENAMES = 1 << 12,
+    SO_UNIQUE_BY_FILE = 1 << 13,
+    SO_SKIP_HARDCODED_LINES_START = 1 << 14,
+    SO_SKIP_SINGLE_COMMENT = 1 << 15,
 };
 
 unsigned int getRegexOptions(unsigned int options);
